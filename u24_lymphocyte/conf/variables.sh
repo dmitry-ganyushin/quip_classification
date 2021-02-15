@@ -7,6 +7,7 @@ CANCER_TYPE=quip
 MONGODB_HOST=osprey.bmi.stonybrook.edu
 MONGODB_PORT=27017
 #HEATMAP_VERSION=lym_vgg_mix
+HEATMAP_VERSION_NAME=lym_vgg-mix
 if [[ -n $HEATMAP_VERSION_NAME ]]; then
 	HEATMAP_VERSION=$HEATMAP_VERSION_NAME ;
 else
@@ -21,7 +22,7 @@ if [[ ! -n $LYM_PREDICTION_BATCH_SIZE ]]; then
    LYM_PREDICTION_BATCH_SIZE=96;
 fi
 # Base directory
-BASE_DIR=/root/quip_classification/u24_lymphocyte/
+BASE_DIR=/gpfs/alpine/world-shared/csc143/ganyushin/quip_classification/u24_lymphocyte/
 OUT_DIR=${BASE_DIR}/data/output
 
 # The username you want to download heatmaps from
@@ -58,6 +59,7 @@ LYM_CNN_TRAINING_DEVICE=gpu0
 LYM_CNN_PRED_DEVICE=gpu0
 #LYM_NECRO_CNN_MODEL_PATH=${BASE_DIR}/data/models_cnn
 #LYM_NECRO_CNN_MODEL_PATH=${BASE_DIR}/prediction/NNFramework_TF_models/config_vgg-mix_test_ext.ini
+MODEL_CONFIG_FILENAME=config_vgg-mix_test_ext.ini
 if [[ -n $MODEL_CONFIG_FILENAME ]]; then
   LYM_NECRO_CNN_MODEL_PATH=${BASE_DIR}/prediction/NNFramework_TF_models/${MODEL_CONFIG_FILENAME} ;
 else
