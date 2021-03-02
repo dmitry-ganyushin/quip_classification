@@ -2,6 +2,7 @@ import sys
 import os
 import numpy as np
 from PIL import Image
+import time
 
 from external_model import load_external_model, pred_by_external_model
 
@@ -85,11 +86,15 @@ def val_fn_epoch_on_disk(classn, model):
     n2 = 0
     n3 = 0
     todo_list = os.listdir(TileFolder)
+    n_files = len(todo_list)
     # shahira: Handling tensorflow memory exhaust issue on large slides
     reset_limit = 100
     cur_indx = 0
+    iotime = 0
     while len(todo_list) > 0:
+        t0 = time.perf_counter()
         todo_list, inputs, inds, coor, rind = load_data(todo_list, rind)
+        iotime = time.perf_counter() - t0
         if len(inputs) == 0:
             break
 
@@ -109,7 +114,7 @@ def val_fn_epoch_on_disk(classn, model):
             print('Restarting model!')
             model.restart_model()
             print('Restarted!')
-
+    print("IOTime = {} sec for {} files".format(iotime, n_files))
     all_or = all_or[:n1]
     all_inds = all_inds[:n2]
     all_coor = all_coor[:n3]
@@ -135,14 +140,13 @@ def split_validation(classn):
 def main():
     if not os.path.exists(TileFolder):
         exit(0)
-
+    t0 = time.perf_counter()
     classes = ['Lymphocytes']
     classn = len(classes)
     sys.setrecursionlimit(10000)
 
     split_validation(classn)
-    print('DONE!')
-
+    print('DONE in {} sec'.format(t0 - time.perf_counter()))
 
 if __name__ == "__main__":
     main()
