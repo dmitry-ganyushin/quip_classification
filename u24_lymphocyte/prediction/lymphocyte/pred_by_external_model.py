@@ -1,3 +1,4 @@
+import getopt
 import sys
 import os
 import numpy as np
@@ -7,6 +8,11 @@ import time
 from external_model import load_external_model, pred_by_external_model
 
 from PIL import ImageFile
+NOADIOS = False
+try:
+    import adios2
+except ImportError:
+    NOADIOS = True
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -28,7 +34,14 @@ def whiteness(png):
     return wh
 
 
-def load_data(todo_list, rind):
+def load_data(todo_list, rind, input_type):
+    #TODODG: check them from variable shape
+    nx = 1000
+    ny = 1000
+    shape = [nx, ny, 3]
+    start = [0, 0, 0]
+    count = [nx, ny, 3]
+
     X = np.zeros(shape=(BatchSize * 40, 3, APS, APS), dtype=np.float32)
     inds = np.zeros(shape=(BatchSize * 40,), dtype=np.int32)
     coor = np.zeros(shape=(20000000, 2), dtype=np.int32)
@@ -36,39 +49,78 @@ def load_data(todo_list, rind):
     xind = 0
     lind = 0
     cind = 0
-    for fn in todo_list:
-        lind += 1
-        full_fn = TileFolder + '/' + fn
-        if not os.path.isfile(full_fn):
-            continue
-        if len(fn.split('_')) < 4:
-            continue
+    if input_type == "adios":
+        with adios2.open(TileFolder + ".bp", "r") as fh:
+            for fstep in fh:
+                step = fstep.current_step()
+                if step == 0:
+                    for fn in todo_list:
+                        lind += 1
+                        #full_fn = TileFolder + '/' + fn
+                        #if not os.path.isfile(full_fn):
+                        #    continue
+                        if len(fn.split('_')) < 4:
+                           continue
 
-        x_off = float(fn.split('_')[0])
-        y_off = float(fn.split('_')[1])
-        svs_pw = float(fn.split('_')[2])
-        png_pw = float(fn.split('_')[3].split('.png')[0])
+                        x_off = float(fn.split('_')[0])
+                        y_off = float(fn.split('_')[1])
+                        svs_pw = float(fn.split('_')[2])
+                        png_pw = float(fn.split('_')[3].split('.png')[0])
+                        #png = np.array(Image.open(full_fn).convert('RGB'))
+                        #start, count?
+                        image = fstep.read(fn, shape, start, count)
+                        png = np.array(image)
+                        for x in range(0, png.shape[1], APS):
+                            if x + APS > png.shape[1]:
+                                continue
+                            for y in range(0, png.shape[0], APS):
+                                if y + APS > png.shape[0]:
+                                    continue
 
-        png = np.array(Image.open(full_fn).convert('RGB'))
-        for x in range(0, png.shape[1], APS):
-            if x + APS > png.shape[1]:
+                                if (whiteness(png[y:y + APS, x:x + APS, :]) >= 12):
+                                    X[xind, :, :, :] = png[y:y + APS, x:x + APS, :].transpose()
+                                    inds[xind] = rind
+                                    xind += 1
+
+                                coor[cind, 0] = np.int32(x_off + (x + APS / 2) * svs_pw / png_pw)
+                                coor[cind, 1] = np.int32(y_off + (y + APS / 2) * svs_pw / png_pw)
+                                cind += 1
+                                rind += 1
+                        if xind >= BatchSize:
+                            break
+    else:
+        for fn in todo_list:
+            lind += 1
+            full_fn = TileFolder + '/' + fn
+            if not os.path.isfile(full_fn):
                 continue
-            for y in range(0, png.shape[0], APS):
-                if y + APS > png.shape[0]:
+            if len(fn.split('_')) < 4:
+                continue
+
+            x_off = float(fn.split('_')[0])
+            y_off = float(fn.split('_')[1])
+            svs_pw = float(fn.split('_')[2])
+            png_pw = float(fn.split('_')[3].split('.png')[0])
+            png = np.array(Image.open(full_fn).convert('RGB'))
+            for x in range(0, png.shape[1], APS):
+                if x + APS > png.shape[1]:
                     continue
+                for y in range(0, png.shape[0], APS):
+                    if y + APS > png.shape[0]:
+                        continue
 
-                if (whiteness(png[y:y + APS, x:x + APS, :]) >= 12):
-                    X[xind, :, :, :] = png[y:y + APS, x:x + APS, :].transpose()
-                    inds[xind] = rind
-                    xind += 1
+                    if (whiteness(png[y:y + APS, x:x + APS, :]) >= 12):
+                        X[xind, :, :, :] = png[y:y + APS, x:x + APS, :].transpose()
+                        inds[xind] = rind
+                        xind += 1
 
-                coor[cind, 0] = np.int32(x_off + (x + APS / 2) * svs_pw / png_pw)
-                coor[cind, 1] = np.int32(y_off + (y + APS / 2) * svs_pw / png_pw)
-                cind += 1
-                rind += 1
+                    coor[cind, 0] = np.int32(x_off + (x + APS / 2) * svs_pw / png_pw)
+                    coor[cind, 1] = np.int32(y_off + (y + APS / 2) * svs_pw / png_pw)
+                    cind += 1
+                    rind += 1
 
-        if xind >= BatchSize:
-            break
+            if xind >= BatchSize:
+                break
 
     X = X[0:xind]
     inds = inds[0:xind]
@@ -77,7 +129,7 @@ def load_data(todo_list, rind):
     return todo_list[lind:], X, inds, coor, rind
 
 
-def val_fn_epoch_on_disk(classn, model):
+def val_fn_epoch_on_disk(classn, model, input_type):
     all_or = np.zeros(shape=(20000000, classn), dtype=np.float32)
     all_inds = np.zeros(shape=(20000000,), dtype=np.int32)
     all_coor = np.zeros(shape=(20000000, 2), dtype=np.int32)
@@ -85,7 +137,15 @@ def val_fn_epoch_on_disk(classn, model):
     n1 = 0
     n2 = 0
     n3 = 0
-    todo_list = os.listdir(TileFolder)
+    if input_type == "adios":
+        todo_list = list()
+        with adios2.open(TileFolder + ".bp") as fh:
+            for fstep in fh:
+                vars = fstep.available_variables()
+                for name in vars:
+                    todo_list.append(name)
+    else:
+        todo_list = os.listdir(TileFolder)
     n_files = len(todo_list)
     # shahira: Handling tensorflow memory exhaust issue on large slides
     reset_limit = 100
@@ -93,7 +153,7 @@ def val_fn_epoch_on_disk(classn, model):
     iotime = 0
     while len(todo_list) > 0:
         t0 = time.perf_counter()
-        todo_list, inputs, inds, coor, rind = load_data(todo_list, rind)
+        todo_list, inputs, inds, coor, rind = load_data(todo_list, rind, input_type)
         iotime = time.perf_counter() - t0
         if len(inputs) == 0:
             break
@@ -121,11 +181,11 @@ def val_fn_epoch_on_disk(classn, model):
     return all_or, all_inds, all_coor
 
 
-def split_validation(classn):
+def split_validation(classn, input_type):
     model = load_external_model(CNNModel)
 
     # Testing
-    Or, inds, coor = val_fn_epoch_on_disk(classn, model)
+    Or, inds, coor = val_fn_epoch_on_disk(classn, model, input_type)
     Or_all = np.zeros(shape=(coor.shape[0],), dtype=np.float32)
     Or_all[inds] = Or[:, 0]
 
@@ -137,7 +197,7 @@ def split_validation(classn):
     return
 
 
-def main():
+def main(input_type):
     if not os.path.exists(TileFolder):
         exit(0)
     t0 = time.perf_counter()
@@ -145,8 +205,28 @@ def main():
     classn = len(classes)
     sys.setrecursionlimit(10000)
 
-    split_validation(classn)
+    split_validation(classn, input_type)
     print('DONE in {} sec'.format(t0 - time.perf_counter()))
 
+def printUsage():
+    print("Options: --input=adios ")
+    return
+
 if __name__ == "__main__":
-    main()
+    INPUT_TYPE = None
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "hi:", ["help", "input"])
+    except getopt.GetoptError:
+        printUsage()
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == "-h":
+            printUsage()
+            sys.exit()
+        elif opt in ("-i", "--input"):
+            INPUT_TYPE = arg
+            if INPUT_TYPE == "adios" and NOADIOS:
+                print("Cannot import required ADIOS library", file=sys.stderr)
+                sys.exit(1)
+
+    main(INPUT_TYPE)
