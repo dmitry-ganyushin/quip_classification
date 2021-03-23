@@ -18,7 +18,9 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 APS = 100
 
-TileFolder = sys.argv[1] + '/'
+#TileFolder = sys.argv[1] + '/'
+TileFolder = sys.argv[1][0:-1] # remove last /
+
 CNNModel = sys.argv[2]
 
 heat_map_out = sys.argv[3]
@@ -68,7 +70,7 @@ def load_data(todo_list, rind, input_type):
                         png_pw = float(fn.split('_')[3].split('.png')[0])
                         #png = np.array(Image.open(full_fn).convert('RGB'))
                         #start, count?
-                        image = fstep.read(fn, shape, start, count)
+                        image = fstep.read(fn, start, count)
                         png = np.array(image)
                         for x in range(0, png.shape[1], APS):
                             if x + APS > png.shape[1]:
@@ -139,7 +141,7 @@ def val_fn_epoch_on_disk(classn, model, input_type):
     n3 = 0
     if input_type == "adios":
         todo_list = list()
-        with adios2.open(TileFolder + ".bp") as fh:
+        with adios2.open(TileFolder + ".bp", "r") as fh:
             for fstep in fh:
                 vars = fstep.available_variables()
                 for name in vars:
@@ -154,7 +156,7 @@ def val_fn_epoch_on_disk(classn, model, input_type):
     while len(todo_list) > 0:
         t0 = time.perf_counter()
         todo_list, inputs, inds, coor, rind = load_data(todo_list, rind, input_type)
-        iotime = time.perf_counter() - t0
+        iotime = iotime + time.perf_counter() - t0
         if len(inputs) == 0:
             break
 
@@ -206,7 +208,7 @@ def main(input_type):
     sys.setrecursionlimit(10000)
 
     split_validation(classn, input_type)
-    print('DONE in {} sec'.format(t0 - time.perf_counter()))
+    print('DONE in {} sec'.format(time.perf_counter() -t0 ))
 
 def printUsage():
     print("Options: --input=adios ")
