@@ -22,10 +22,10 @@ if [[ ! -n $LYM_PREDICTION_BATCH_SIZE ]]; then
 fi
 
 # Base data and output directories
-export APP_DIR=/quip_app
+export APP_DIR=/gpfs/alpine/world-shared/csc143/ganyushin/quip_app
 export BASE_DIR=${APP_DIR}/quip_classification
 export TIL_DIR=${BASE_DIR}/u24_lymphocyte/
-export DATA_DIR=/data
+export DATA_DIR=${APP_DIR}/data
 export OUT_DIR=${DATA_DIR}/output
 
 # Prediction folders
@@ -39,6 +39,7 @@ export LOG_OUTPUT_FOLDER=${OUT_DIR}/log
 export PATCH_PATH=${DATA_DIR}/patches
 export OUT_FOLDERS="${JSON_OUTPUT_FOLDER} ${BINARY_JSON_OUTPUT_FOLDER} ${HEATMAP_TXT_OUTPUT_FOLDER} ${BINARY_HEATMAP_TXT_OUTPUT_FOLDER} ${LOG_OUTPUT_FOLDER} ${PATCH_PATH}"
 
+echo $TIL_DIR
 # Trained model
 if [[ -n $MODEL_CONFIG_FILENAME ]]; then
   export LYM_NECRO_CNN_MODEL_PATH=${TIL_DIR}/prediction/NNFramework_TF_models/${MODEL_CONFIG_FILENAME} ;
