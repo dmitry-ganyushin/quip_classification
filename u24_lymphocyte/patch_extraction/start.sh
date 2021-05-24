@@ -2,7 +2,11 @@
 set -x
 source ../conf/variables.sh
 
-bash save_svs_to_tiles.sh 0 1  > ${LOG_OUTPUT_FOLDER}/log.save_svs_to_tiles.thread_0.txt 2>&1
+THREAD=$1
+NTHREADS=$2
+
+bash save_svs_to_tiles.sh ${THREAD}  ${NTHREADS}  > ${LOG_OUTPUT_FOLDER}/log.save_svs_to_tiles.thread_${THREAD} 2>&1
+#bash save_svs_to_tiles.sh 0 1  > ${LOG_OUTPUT_FOLDER}/log.save_svs_to_tiles.thread_0.txt 2>&1
 #bash save_svs_to_tiles.sh 0 6  > ${LOG_OUTPUT_FOLDER}/log.save_svs_to_tiles.thread_0.txt 2>&1
 #bash save_svs_to_tiles.sh 1 6  > ${LOG_OUTPUT_FOLDER}/log.save_svs_to_tiles.thread_1.txt 2>&1
 #bash save_svs_to_tiles.sh 2 6  > ${LOG_OUTPUT_FOLDER}/log.save_svs_to_tiles.thread_2.txt 2>&1

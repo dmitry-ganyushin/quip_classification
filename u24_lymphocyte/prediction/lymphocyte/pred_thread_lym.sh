@@ -8,6 +8,7 @@ PARAL=$2      # a number of this particular process
 MAX_PARAL=$3  # tital number of processes
 DEVICE=$4
 
+echo "Device=$DEVICE"
 DATA_FILE=patch-level-lym.txt
 DONE_FILE=extraction_done.txt
 

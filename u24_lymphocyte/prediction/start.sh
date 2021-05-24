@@ -1,4 +1,7 @@
 #!/bin/bash
+THREAD=$1
+NTHREADS=$2
+
 set -x 
 source ../conf/variables.sh
 
@@ -7,8 +10,8 @@ echo $LYM_CNN_PRED_DEVICE
 
 cd lymphocyte
 bash pred_thread_lym.sh \
-    ${PATCH_PATH} 0 1 ${LYM_CNN_PRED_DEVICE} \
-    > ${LOG_OUTPUT_FOLDER}/log.pred_thread_lym_0.txt 2>&1
+    ${PATCH_PATH} ${THREAD} ${NTHREADS} ${LYM_CNN_PRED_DEVICE} \
+    > ${LOG_OUTPUT_FOLDER}/log.pred_thread_lym_${THREAD}.txt 2>&1
 cd ..
 
 #cd necrosis
