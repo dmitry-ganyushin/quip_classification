@@ -28,6 +28,7 @@ heat_map_out = sys.argv[3]
 BatchSize = int(sys.argv[4])  # shahira: Batch size argument
 # BatchSize = 96;
 # BatchSize = 48;
+NGPU_PRO_SLIDE = int(sys.argv[5])
 print('BatchSize = ', BatchSize)
 
 
