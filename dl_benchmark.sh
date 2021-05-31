@@ -18,15 +18,15 @@ cd ./u24_lymphocyte/scripts/
 # N SLIDES processed in parallel
 NPROC=6
 # every slide is processed by
-NGPU_PRO_SLIDE=6
+GPU_NTHREADS=6
 
 for n in $(seq 0 $((NPROC-1))); do
-   jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC 0 $NGPU_PRO_SLIDE &
-   jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC 1 $NGPU_PRO_SLIDE &
-   jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC 2 $NGPU_PRO_SLIDE &
-   jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC 3 $NGPU_PRO_SLIDE &
-   jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC 4 $NGPU_PRO_SLIDE &
-   jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC 5 $NGPU_PRO_SLIDE &
+   jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC 0 $GPU_NTHREADS &
+   jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC 1 $GPU_NTHREADS &
+   jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC 2 $GPU_NTHREADS &
+   jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC 3 $GPU_NTHREADS &
+   jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC 4 $GPU_NTHREADS &
+   jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC 5 $GPU_NTHREADS &
 done
 wait   
 

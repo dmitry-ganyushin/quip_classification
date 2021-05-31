@@ -6,7 +6,10 @@ FOLDER=$1
 # PARAL = [0, MAX_PARAL-1]
 PARAL=$2      # a number of this particular process
 MAX_PARAL=$3  # tital number of processes
-DEVICE=$4
+GPU_THREAD=$4
+GPU_NTHREADS=$5
+
+DEVICE=$6
 
 echo "Device=$DEVICE"
 DATA_FILE=patch-level-lym.txt
@@ -35,7 +38,7 @@ while [ 1 ]; do
             if [ ! -f ${files}/${DATA_FILE} ]; then
                 echo ${files}/${DATA_FILE} generating
                 THEANO_FLAGS="device=${DEVICE}" python -u ${EXEC_FILE} \
-                    ${files} ${LYM_NECRO_CNN_MODEL_PATH} ${DATA_FILE} ${LYM_PREDICTION_BATCH_SIZE} ${DEVICE}
+                    ${files} ${LYM_NECRO_CNN_MODEL_PATH} ${DATA_FILE} ${LYM_PREDICTION_BATCH_SIZE} ${GPU_THREAD} ${GPU_NTHREADS} ${DEVICE}
             fi
         #fi
     done

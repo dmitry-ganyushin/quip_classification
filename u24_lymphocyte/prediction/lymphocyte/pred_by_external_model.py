@@ -8,6 +8,7 @@ import time
 from external_model import load_external_model, pred_by_external_model
 
 from PIL import ImageFile
+
 NOADIOS = False
 try:
     import adios2
@@ -18,8 +19,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 APS = 100
 
-#TileFolder = sys.argv[1] + '/'
-TileFolder = sys.argv[1][0:-1] # remove last /
+# TileFolder = sys.argv[1] + '/'
+TileFolder = sys.argv[1][0:-1]  # remove last /
 BPFileName = sys.argv[1][0:-1]
 CNNModel = sys.argv[2]
 
@@ -28,7 +29,9 @@ heat_map_out = sys.argv[3]
 BatchSize = int(sys.argv[4])  # shahira: Batch size argument
 # BatchSize = 96;
 # BatchSize = 48;
-NGPU_PRO_SLIDE = int(sys.argv[5])
+GPU_THREAD = int(sys.argv[5])
+GPU_NTHREADS = int(sys.argv[6])
+
 print('BatchSize = ', BatchSize)
 
 
@@ -38,7 +41,6 @@ def whiteness(png):
 
 
 def load_data(todo_list, rind, input_type):
-
     X = np.zeros(shape=(BatchSize * 40, 3, APS, APS), dtype=np.float32)
     inds = np.zeros(shape=(BatchSize * 40,), dtype=np.int32)
     coor = np.zeros(shape=(20000000, 2), dtype=np.int32)
@@ -55,18 +57,18 @@ def load_data(todo_list, rind, input_type):
                 if step == 0:
                     for fn in todo_list:
                         lind += 1
-                        #full_fn = TileFolder + '/' + fn
-                        #if not os.path.isfile(full_fn):
+                        # full_fn = TileFolder + '/' + fn
+                        # if not os.path.isfile(full_fn):
                         #    continue
                         if len(fn.split('_')) < 4:
-                           continue
+                            continue
 
                         x_off = float(fn.split('_')[0])
                         y_off = float(fn.split('_')[1])
                         svs_pw = float(fn.split('_')[2])
                         png_pw = float(fn.split('_')[3].split('.png')[0])
-                        #png = np.array(Image.open(full_fn).convert('RGB'))
-                        #start, count?
+                        # png = np.array(Image.open(full_fn).convert('RGB'))
+                        # start, count?
                         var = step_vars[fn]
                         nx = int(var["Shape"].split(",")[0].strip())
                         ny = int(var["Shape"].split(",")[1].strip())
@@ -162,23 +164,24 @@ def val_fn_epoch_on_disk(classn, model, input_type):
         iotime = iotime + time.perf_counter() - t0
         if len(inputs) == 0:
             break
+        if cur_indx % GPU_NTHREADS == GPU_THREAD:
+            output = pred_by_external_model(model, inputs)
 
-        output = pred_by_external_model(model, inputs)
+            all_or[n1:n1 + len(output)] = output
+            all_inds[n2:n2 + len(inds)] = inds
+            all_coor[n3:n3 + len(coor)] = coor
+            n1 += len(output)
+            n2 += len(inds)
+            n3 += len(coor)
 
-        all_or[n1:n1 + len(output)] = output
-        all_inds[n2:n2 + len(inds)] = inds
-        all_coor[n3:n3 + len(coor)] = coor
-        n1 += len(output)
-        n2 += len(inds)
-        n3 += len(coor)
+            # shahira: Handling tensorflow memory exhaust issue on large slides
+            cur_indx += 1
+            if cur_indx > reset_limit:
+                cur_indx = 0
+                print('Restarting model!')
+                model.restart_model()
+                print('Restarted!')
 
-        # shahira: Handling tensorflow memory exhaust issue on large slides
-        cur_indx += 1
-        if (cur_indx > reset_limit):
-            cur_indx = 0
-            print('Restarting model!')
-            model.restart_model()
-            print('Restarted!')
     print("IOTime = {} sec for {} files".format(iotime, n_files))
     all_or = all_or[:n1]
     all_inds = all_inds[:n2]
@@ -194,10 +197,9 @@ def split_validation(classn, input_type):
     Or_all = np.zeros(shape=(coor.shape[0],), dtype=np.float32)
     Or_all[inds] = Or[:, 0]
 
-    fid = open(TileFolder + '/' + heat_map_out, 'w')
-    for idx in range(0, Or_all.shape[0]):
-        fid.write('{} {} {}\n'.format(coor[idx][0], coor[idx][1], Or_all[idx]))
-    fid.close()
+    with open(TileFolder + '/' + heat_map_out + "_" + str(GPU_THREAD), 'w') as fid:
+        for idx in range(0, Or_all.shape[0]):
+            fid.write('{} {} {}\n'.format(coor[idx][0], coor[idx][1], Or_all[idx]))
 
     return
 
@@ -211,11 +213,13 @@ def main(input_type):
     sys.setrecursionlimit(10000)
 
     split_validation(classn, input_type)
-    print('DONE in {} sec'.format(time.perf_counter() -t0 ))
+    print('DONE in {} sec'.format(time.perf_counter() - t0))
+
 
 def printUsage():
     print("Options: --input=adios ")
     return
+
 
 if __name__ == "__main__":
     INPUT_TYPE = None

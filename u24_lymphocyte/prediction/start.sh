@@ -1,6 +1,8 @@
 #!/bin/bash
 THREAD=$1
 NTHREADS=$2
+GPU_THREAD=$3
+GPU_NTHREADS=$4
 
 set -x 
 source ../conf/variables.sh
@@ -10,8 +12,8 @@ echo $LYM_CNN_PRED_DEVICE
 
 cd lymphocyte
 bash pred_thread_lym.sh \
-    ${PATCH_PATH} ${THREAD} ${NTHREADS} ${LYM_CNN_PRED_DEVICE} \
-    > ${LOG_OUTPUT_FOLDER}/log.pred_thread_lym_${THREAD}.txt 2>&1
+    ${PATCH_PATH} ${THREAD} ${NTHREADS} ${GPU_THREAD} ${GPU_NTHREADS} ${LYM_CNN_PRED_DEVICE} \
+    > ${LOG_OUTPUT_FOLDER}/log.pred_thread_lym_"${THREAD}"_"${GPU_THREAD}".txt 2>&1
 cd ..
 
 #cd necrosis
