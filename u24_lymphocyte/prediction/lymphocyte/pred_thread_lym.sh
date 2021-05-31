@@ -23,7 +23,8 @@ while [ 1 ]; do
     LINE_N=0
     FILE_NUM=0
     EXTRACTING=0
-    for files in ${FOLDER}/*/; do
+    FILE_LIST=`du -s ${FOLDER}/*/ | sort -r |  awk '{ print $2 }'`
+    for files in ${FILE_LIST}; do
         FILE_NUM=$((FILE_NUM+1))
         #if [ ! -f ${files}/${DONE_FILE} ]; then EXTRACTING=1; fi
 
