@@ -160,15 +160,16 @@ def val_fn_epoch_on_disk(classn, model, input_type):
     reset_limit = 100
     cur_indx = 0
     iotime = 0
+    batch = 0
     while len(todo_list) > 0:
         t0 = time.perf_counter()
         todo_list, inputs, inds, coor, rind = load_data(todo_list, rind, input_type)
         iotime = iotime + time.perf_counter() - t0
         if len(inputs) == 0:
             break
-        if cur_indx % GPU_NTHREADS == GPU_THREAD:
+        if batch % GPU_NTHREADS == GPU_THREAD:
             output = pred_by_external_model(model, inputs)
-            print("Processed batch {}".format(cur_indx))
+            print("Processed batch {}".format(batch))
             all_or[n1:n1 + len(output)] = output
             all_inds[n2:n2 + len(inds)] = inds
             all_coor[n3:n3 + len(coor)] = coor
@@ -186,7 +187,7 @@ def val_fn_epoch_on_disk(classn, model, input_type):
             all_or = all_or[:n1]
             all_inds = all_inds[:n2]
             all_coor = all_coor[:n3]
-
+        batch += 1
     print("IOTime = {} sec for {} files".format(iotime, n_files))
     return all_or, all_inds, all_coor
 
