@@ -184,10 +184,10 @@ def val_fn_epoch_on_disk(classn, model, input_type):
                 print('Restarting model!')
                 model.restart_model()
                 print('Restarted!')
-            all_or = all_or[:n1]
-            all_inds = all_inds[:n2]
-            all_coor = all_coor[:n3]
         batch += 1
+    all_or = all_or[:n1]
+    all_inds = all_inds[:n2]
+    all_coor = all_coor[:n3]
     print("IOTime = {} sec for {} files".format(iotime, n_files))
     return all_or, all_inds, all_coor
 
