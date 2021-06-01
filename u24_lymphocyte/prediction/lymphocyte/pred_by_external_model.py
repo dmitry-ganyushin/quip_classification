@@ -33,6 +33,8 @@ GPU_THREAD = int(sys.argv[5])
 GPU_NTHREADS = int(sys.argv[6])
 
 print('BatchSize = ', BatchSize)
+print('GPU_THREAD = ', GPU_THREAD)
+print('GPU_NTHREADS = ', GPU_NTHREADS)
 
 
 def whiteness(png):
@@ -166,7 +168,7 @@ def val_fn_epoch_on_disk(classn, model, input_type):
             break
         if cur_indx % GPU_NTHREADS == GPU_THREAD:
             output = pred_by_external_model(model, inputs)
-
+            print("Processed batch {}".format(cur_indx))
             all_or[n1:n1 + len(output)] = output
             all_inds[n2:n2 + len(inds)] = inds
             all_coor[n3:n3 + len(coor)] = coor
