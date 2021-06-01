@@ -8,8 +8,8 @@
 
 module load  ibm-wml-ce/1.6.2-1
 module load hdf5
-export PYTHONPATH=/gpfs/alpine/world-shared/csc143/ganyushin/quip-app/ADIOS2-Python-fast/build/lib/python3.6/site-packages:$PYTHONPATH
-export LD_LIBRARY_PATH=/gpfs/alpine/world-shared/csc143/ganyushin/quip-app/openslide/:$LD_LIBRARY_PATH
+export PYTHONPATH=/gpfs/alpine/world-shared/csc143/ganyushin/quip_app/ADIOS2-Python-fast/build/lib/python3.6/site-packages:$PYTHONPATH
+export LD_LIBRARY_PATH=/gpfs/alpine/world-shared/csc143/ganyushin/quip_app/openslide/:$LD_LIBRARY_PATH
 
 NODES=$(cat ${LSB_DJOB_HOSTFILE} | sort | uniq | grep -v login | grep -v batch | wc -l)
 
