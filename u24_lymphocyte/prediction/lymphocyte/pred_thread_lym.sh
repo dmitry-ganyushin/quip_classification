@@ -12,7 +12,7 @@ GPU_NTHREADS=$5
 DEVICE=$6
 
 echo "Device=$DEVICE"
-DATA_FILE=patch-level-lym.txt
+DATA_FILE="patch-level-lym.txt_${GPU_THREAD}"
 DONE_FILE=extraction_done.txt
 
 if [ ${EXTERNAL_LYM_MODEL} -eq 0 ]; then
