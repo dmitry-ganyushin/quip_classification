@@ -7,7 +7,6 @@
 #BSUB -e mldl%J.err
 
 module load  ibm-wml-ce/1.6.2-1
-#conda activate ibm-wml-ce-1.6.2-1-dg
 conda activate ibm-wml-ce-1.6.2-1
 module load hdf5
 #ADIOS2

@@ -8,15 +8,15 @@
 
 module load  ibm-wml-ce/1.6.2-1
 module load hdf5
-export PYTHONPATH=/gpfs/alpine/world-shared/csc143/ganyushin/ADIOS2-Python-fast/build/lib/python3.6/site-packages:$PYTHONPATH
-export LD_LIBRARY_PATH=/gpfs/alpine/world-shared/csc143/ganyushin/openslide/:$LD_LIBRARY_PATH
+export PYTHONPATH=/gpfs/alpine/world-shared/csc143/ganyushin/quip-app/ADIOS2-Python-fast/build/lib/python3.6/site-packages:$PYTHONPATH
+export LD_LIBRARY_PATH=/gpfs/alpine/world-shared/csc143/ganyushin/quip-app/openslide/:$LD_LIBRARY_PATH
 
 NODES=$(cat ${LSB_DJOB_HOSTFILE} | sort | uniq | grep -v login | grep -v batch | wc -l)
 
 cd ./u24_lymphocyte/scripts/
 
 # N SLIDES processed in parallel
-NPROC=6
+NPROC=1
 # every slide is processed by
 GPU_NTHREADS=6
 
