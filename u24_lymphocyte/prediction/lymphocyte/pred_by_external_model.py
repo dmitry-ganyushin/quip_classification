@@ -200,7 +200,7 @@ def split_validation(classn, input_type):
     Or_all = np.zeros(shape=(coor.shape[0],), dtype=np.float32)
     Or_all[inds] = Or[:, 0]
 
-    with open(TileFolder + '/' + heat_map_out + "_" + str(GPU_THREAD), 'w') as fid:
+    with open(TileFolder + '/' + heat_map_out, 'w') as fid:
         for idx in range(0, Or_all.shape[0]):
             fid.write('{} {} {}\n'.format(coor[idx][0], coor[idx][1], Or_all[idx]))
 
