@@ -1,0 +1,102 @@
+import sys
+import os
+import numpy as np
+from PIL import Image
+
+from PIL import ImageFile
+NOADIOS = False
+try:
+    import adios2
+except ImportError:
+    NOADIOS = True
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+APS = 100
+
+BPFileName = sys.argv[1][0:-1]
+
+
+BatchSize = int(sys.argv[2])  # shahira: Batch size argument
+# BatchSize = 96;
+# BatchSize = 48;
+print('BatchSize = ', BatchSize)
+
+
+def whiteness(png):
+    wh = (np.std(png[:, :, 0].flatten()) + np.std(png[:, :, 1].flatten()) + np.std(png[:, :, 2].flatten())) / 3.0
+    return wh
+
+
+def load_data(todo_list, rind):
+
+    X = np.zeros(shape=(BatchSize * 40, 3, APS, APS), dtype=np.float32)
+    inds = np.zeros(shape=(BatchSize * 40,), dtype=np.int32)
+    coor = np.zeros(shape=(20000000, 2), dtype=np.int32)
+
+    xind = 0
+    lind = 0
+    cind = 0
+
+    with adios2.open(BPFileName, "r") as fh:
+        for fstep in fh:
+            step = fstep.current_step()
+            # inspect variables in current step
+            step_vars = fstep.available_variables()
+            if step == 0:
+                for fn in todo_list:
+                    lind += 1
+                    if len(fn.split('_')) < 4:
+                        continue
+
+                    x_off = float(fn.split('_')[0])
+                    y_off = float(fn.split('_')[1])
+                    svs_pw = float(fn.split('_')[2])
+                    png_pw = float(fn.split('_')[3].split('.png')[0])
+                    var = step_vars[fn]
+                    nx = int(var["Shape"].split(",")[0].strip())
+                    ny = int(var["Shape"].split(",")[1].strip())
+                    print("processing : {} nx = {}  ny = {}".format(fn, nx, ny))
+                    start = [0, 0, 0]
+                    count = [nx, ny, 3]
+                    image = fstep.read(fn, start, count)
+                    png = np.array(image)
+                    for x in range(0, png.shape[1], APS):
+                        if x + APS > png.shape[1]:
+                            continue
+                        for y in range(0, png.shape[0], APS):
+                            if y + APS > png.shape[0]:
+                                continue
+
+                            if (whiteness(png[y:y + APS, x:x + APS, :]) >= 12):
+                                X[xind, :, :, :] = png[y:y + APS, x:x + APS, :].transpose()
+                                inds[xind] = rind
+                                xind += 1
+
+                            coor[cind, 0] = np.int32(x_off + (x + APS / 2) * svs_pw / png_pw)
+                            coor[cind, 1] = np.int32(y_off + (y + APS / 2) * svs_pw / png_pw)
+                            cind += 1
+                            rind += 1
+                    if xind >= BatchSize:
+                        break
+
+    return todo_list[lind:], X, inds, coor, rind
+
+def main():
+    todo_list = list()
+    with adios2.open(BPFileName, "r") as fh:
+        for fstep in fh:
+            vars = fstep.available_variables()
+            for name in vars:
+                todo_list.append(name)
+    with adios2.open(BPFileName+"_batches", "w") as fh:
+
+        while len(todo_list) > 0:
+            todo_list, inputs, inds, coor, rind = load_data(todo_list, rind)
+            fh.write("inputs", inputs)
+            fh.write("inds", inds)
+            fh.write("rind", rind)
+            fh.write("coor", coor, end_step=True)
+
+if __name__ == "__main__":
+    main()

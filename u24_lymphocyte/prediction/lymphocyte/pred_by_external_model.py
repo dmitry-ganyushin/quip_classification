@@ -35,8 +35,37 @@ def whiteness(png):
     wh = (np.std(png[:, :, 0].flatten()) + np.std(png[:, :, 1].flatten()) + np.std(png[:, :, 2].flatten())) / 3.0
     return wh
 
+def load_data():
+    with adios2.open("cfd.bp", "r") as fh:
 
-def load_data(todo_list, rind, input_type):
+        for fstep in fh:
+
+            # inspect variables in current step
+            step_vars = fstep.available_variables()
+
+            # print variables information
+            for name, info in step_vars.items():
+                print("variable_name: " + name)
+                for key, value in info.items():
+                    print("\t" + key + ": " + value)
+                print("\n")
+
+            # track current step
+            step = fstep.current_step()
+            if( step == 0 ):
+                size_in = fstep.read("size")
+
+            # read variables return a numpy array with corresponding selection
+            physical_time = fstep.read("inputs")
+            temperature = fstep.read("inds", start, count)
+            pressure = fstep.read("pressure", start, count)
+            fh.write("inputs", inputs)
+            fh.write("inds", inds)
+            fh.write("rind", rind)
+            fh.write("coor", coor, end_step=True)
+            return
+
+def _load_data(todo_list, rind, input_type):
 
     X = np.zeros(shape=(BatchSize * 40, 3, APS, APS), dtype=np.float32)
     inds = np.zeros(shape=(BatchSize * 40,), dtype=np.int32)
