@@ -35,35 +35,36 @@ def whiteness(png):
     wh = (np.std(png[:, :, 0].flatten()) + np.std(png[:, :, 1].flatten()) + np.std(png[:, :, 2].flatten())) / 3.0
     return wh
 
-def load_data():
-    with adios2.open("cfd.bp", "r") as fh:
+def load_data(needed_step):
+    X = np.zeros(shape=(BatchSize * 40, 3, APS, APS), dtype=np.float32)
+    inds = np.zeros(shape=(BatchSize * 40,), dtype=np.int32)
+    coor = np.zeros(shape=(20000000, 2), dtype=np.int32)
+    rind = 0
+    with adios2.open(BPFileName + "_patches", "r") as fh:
 
         for fstep in fh:
 
             # inspect variables in current step
-            step_vars = fstep.available_variables()
+            # we know what we are looking for
+            # step_vars = fstep.available_variables()
 
-            # print variables information
-            for name, info in step_vars.items():
-                print("variable_name: " + name)
-                for key, value in info.items():
-                    print("\t" + key + ": " + value)
-                print("\n")
-
-            # track current step
+            # lenear searh for the needed step
             step = fstep.current_step()
-            if( step == 0 ):
-                size_in = fstep.read("size")
+            if( step == needed_step):
 
-            # read variables return a numpy array with corresponding selection
-            physical_time = fstep.read("inputs")
-            temperature = fstep.read("inds", start, count)
-            pressure = fstep.read("pressure", start, count)
-            fh.write("inputs", inputs)
-            fh.write("inds", inds)
-            fh.write("rind", rind)
-            fh.write("coor", coor, end_step=True)
-            return
+                # read variables return a numpy array with corresponding selection
+                start = [0,0,0,0]
+                count = [X.shape[0], X.shape[1], X.shape[2], X.shape[3]]
+                X = fstep.read("inputs", start, count)
+                start = [0]
+                count = [inds.shape[0]]
+                inds = fstep.read("inds", start, count)
+                rind = fstep.read("rind")
+                start = [0, 0]
+                count = [coor.shape[0], coor.shape[1]]
+                coor = fstep.write("coor", coor, start, count)
+
+    return X, inds, coor, rind
 
 def _load_data(todo_list, rind, input_type):
 
@@ -170,6 +171,51 @@ def val_fn_epoch_on_disk(classn, model, input_type):
     n1 = 0
     n2 = 0
     n3 = 0
+    with adios2.open(BPFileName + "_batches", "r") as fh:
+        nsteps = fh.steps()
+
+    # shahira: Handling tensorflow memory exhaust issue on large slides
+    reset_limit = 100
+    cur_indx = 0
+    iotime = 0
+    todo_list = [ s for s in range(nsteps)]
+    while len(todo_list) > 0:
+        t0 = time.perf_counter()
+        inputs, inds, coor, rind = load_data(todo_list.pop(0))
+        iotime = iotime + time.perf_counter() - t0
+        if len(inputs) == 0:
+            break
+
+        output = pred_by_external_model(model, inputs)
+
+        all_or[n1:n1 + len(output)] = output
+        all_inds[n2:n2 + len(inds)] = inds
+        all_coor[n3:n3 + len(coor)] = coor
+        n1 += len(output)
+        n2 += len(inds)
+        n3 += len(coor)
+
+        # shahira: Handling tensorflow memory exhaust issue on large slides
+        cur_indx += 1
+        if (cur_indx > reset_limit):
+            cur_indx = 0
+            print('Restarting model!')
+            model.restart_model()
+            print('Restarted!')
+    print("IOTime = {} sec for {} batches".format(iotime, nsteps))
+    all_or = all_or[:n1]
+    all_inds = all_inds[:n2]
+    all_coor = all_coor[:n3]
+    return all_or, all_inds, all_coor
+
+def _val_fn_epoch_on_disk(classn, model, input_type):
+    all_or = np.zeros(shape=(20000000, classn), dtype=np.float32)
+    all_inds = np.zeros(shape=(20000000,), dtype=np.int32)
+    all_coor = np.zeros(shape=(20000000, 2), dtype=np.int32)
+    rind = 0
+    n1 = 0
+    n2 = 0
+    n3 = 0
     if input_type == "adios":
         todo_list = list()
         with adios2.open(BPFileName, "r") as fh:
@@ -186,7 +232,7 @@ def val_fn_epoch_on_disk(classn, model, input_type):
     iotime = 0
     while len(todo_list) > 0:
         t0 = time.perf_counter()
-        todo_list, inputs, inds, coor, rind = load_data(todo_list, rind, input_type)
+        todo_list, inputs, inds, coor, rind = _load_data(todo_list, rind, input_type)
         iotime = iotime + time.perf_counter() - t0
         if len(inputs) == 0:
             break
