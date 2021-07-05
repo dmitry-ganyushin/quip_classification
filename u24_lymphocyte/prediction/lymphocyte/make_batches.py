@@ -68,7 +68,7 @@ def load_data(todo_list, rind):
                             if y + APS > png.shape[0]:
                                 continue
 
-                            if (whiteness(png[y:y + APS, x:x + APS, :]) >= 12):
+                            if whiteness(png[y:y + APS, x:x + APS, :]) >= 12:
                                 X[xind, :, :, :] = png[y:y + APS, x:x + APS, :].transpose()
                                 inds[xind] = rind
                                 xind += 1
@@ -90,13 +90,24 @@ def main():
             for name in vars:
                 todo_list.append(name)
     with adios2.open(BPFileName+"_batches", "w") as fh:
-
+        rind = 0
         while len(todo_list) > 0:
             todo_list, inputs, inds, coor, rind = load_data(todo_list, rind)
-            fh.write("inputs", inputs)
-            fh.write("inds", inds)
-            fh.write("rind", rind)
-            fh.write("coor", coor, end_step=True)
+            shape = [inputs.shape[0],inputs.shape[1], inputs.shape[2], inputs.shape[3]]
+            start = [0,0,0,0]
+            count = [inputs.shape[0],inputs.shape[1], inputs.shape[2], inputs.shape[3]]
+            fh.write("inputs", inputs, shape, start, count)
+            shape = [inds.shape[0]]
+            start = [0]
+            count = [inds.shape[0]]
+            fh.write("inds", inds, shape, start, count)
+            rind_arr = np.zeros(shape=(1,), dtype=np.int32)
+            rind_arr[0] = rind
+            fh.write("rind", rind_arr)
+            shape = [coor.shape[0], coor.shape[1]]
+            start = [0, 0]
+            count = [coor.shape[0], coor.shape[1]]
+            fh.write("coor", coor, shape, start, count, end_step=True)
 
 if __name__ == "__main__":
     main()
