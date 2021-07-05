@@ -40,7 +40,7 @@ def load_data(needed_step):
     inds = np.zeros(shape=(BatchSize * 40,), dtype=np.int32)
     coor = np.zeros(shape=(20000000, 2), dtype=np.int32)
     rind = 0
-    with adios2.open(BPFileName + "_patches", "r") as fh:
+    with adios2.open(BPFileName, "r") as fh:
 
         for fstep in fh:
 
@@ -171,7 +171,7 @@ def val_fn_epoch_on_disk(classn, model, input_type):
     n1 = 0
     n2 = 0
     n3 = 0
-    with adios2.open(BPFileName + "_batches", "r") as fh:
+    with adios2.open(BPFileName, "r") as fh:
         nsteps = fh.steps()
 
     # shahira: Handling tensorflow memory exhaust issue on large slides
