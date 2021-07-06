@@ -79,6 +79,9 @@ def load_data(todo_list, rind):
                             rind += 1
                     if xind >= BatchSize:
                         break
+    X = X[0:xind]
+    inds = inds[0:xind]
+    coor = coor[0:cind]
 
     return todo_list[lind:], X, inds, coor, rind
 
