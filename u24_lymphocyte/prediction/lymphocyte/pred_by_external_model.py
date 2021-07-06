@@ -51,17 +51,25 @@ def load_data(needed_step):
             # lenear searh for the needed step
             step = fstep.current_step()
             if( step == needed_step):
+                step_vars = step.available_variables()
+                n0 = int(step_vars["inputs"]["Shape"].split(",")[0].strip())
+                n1 = int(step_vars["inputs"]["Shape"].split(",")[1].strip())
+                n2 = int(step_vars["inputs"]["Shape"].split(",")[2].strip())
+                n3 = int(step_vars["inputs"]["Shape"].split(",")[3].strip())
 
                 # read variables return a numpy array with corresponding selection
                 start = [0,0,0,0]
-                count = [X.shape[0], X.shape[1], X.shape[2], X.shape[3]]
+                count = [n0, n1, n2, n3]
                 X = fstep.read("inputs", start, count)
                 start = [0]
-                count = [inds.shape[0]]
+                n0 = int(step_vars["inds"]["Shape"].split(",")[0].strip())
+                count = [n0]
                 inds = fstep.read("inds", start, count)
                 rind = fstep.read("rind")
                 start = [0, 0]
-                count = [coor.shape[0], coor.shape[1]]
+                n0 = int(step_vars["coor"]["Shape"].split(",")[0].strip())
+                n1 = int(step_vars["coor"]["Shape"].split(",")[1].strip())
+                count = [n0, n1]
                 coor = fstep.read("coor", start, count)
 
     return X, inds, coor, rind
