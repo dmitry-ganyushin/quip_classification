@@ -51,7 +51,7 @@ def load_data(needed_step):
             # lenear searh for the needed step
             step = fstep.current_step()
             if( step == needed_step):
-                step_vars = step.available_variables()
+                step_vars = fstep.available_variables()
                 n0 = int(step_vars["inputs"]["Shape"].split(",")[0].strip())
                 n1 = int(step_vars["inputs"]["Shape"].split(",")[1].strip())
                 n2 = int(step_vars["inputs"]["Shape"].split(",")[2].strip())
