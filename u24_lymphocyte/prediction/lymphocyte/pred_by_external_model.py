@@ -62,7 +62,7 @@ def load_data(needed_step):
                 rind = fstep.read("rind")
                 start = [0, 0]
                 count = [coor.shape[0], coor.shape[1]]
-                coor = fstep.read("coor", coor, start, count)
+                coor = fstep.read("coor", start, count)
 
     return X, inds, coor, rind
 
