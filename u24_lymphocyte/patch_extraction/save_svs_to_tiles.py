@@ -148,3 +148,5 @@ if __name__ == "__main__":
     t0 = time.perf_counter()
     main("adios2")
     print('DONE in {} sec'.format(time.perf_counter() -t0 ))
+    #TODODG exit codes for diagnostic
+    sys.exit(0)

@@ -1,25 +1,14 @@
 import sys
-import os
 import numpy as np
-from PIL import Image
-
-from PIL import ImageFile
-NOADIOS = False
-try:
-    import adios2
-except ImportError:
-    NOADIOS = True
-
-ImageFile.LOAD_TRUNCATED_IMAGES = True
+import adios2
 
 APS = 100
 
-BPFileName = sys.argv[1][0:-1]
+PatchesFileName = sys.argv[1][0:-1]
+BatchesFileName = sys.argv[2][0:-1]
 
+BatchSize = int(sys.argv[3])
 
-BatchSize = int(sys.argv[2])  # shahira: Batch size argument
-# BatchSize = 96;
-# BatchSize = 48;
 print('BatchSize = ', BatchSize)
 
 
@@ -29,7 +18,6 @@ def whiteness(png):
 
 
 def load_data(todo_list, rind):
-
     X = np.zeros(shape=(BatchSize * 40, 3, APS, APS), dtype=np.float32)
     inds = np.zeros(shape=(BatchSize * 40,), dtype=np.int32)
     coor = np.zeros(shape=(20000000, 2), dtype=np.int32)
@@ -38,7 +26,7 @@ def load_data(todo_list, rind):
     lind = 0
     cind = 0
 
-    with adios2.open(BPFileName, "r") as fh:
+    with adios2.open(PatchesFileName, "r") as fh:
         for fstep in fh:
             step = fstep.current_step()
             # inspect variables in current step
@@ -85,20 +73,21 @@ def load_data(todo_list, rind):
 
     return todo_list[lind:], X, inds, coor, rind
 
+
 def main():
     todo_list = list()
-    with adios2.open(BPFileName, "r") as fh:
+    with adios2.open(PatchesFileName, "r") as fh:
         for fstep in fh:
             vars = fstep.available_variables()
             for name in vars:
                 todo_list.append(name)
-    with adios2.open(BPFileName+"_batches", "w") as fh:
+    with adios2.open(BatchesFileName, "w") as fh:
         rind = 0
         while len(todo_list) > 0:
             todo_list, inputs, inds, coor, rind = load_data(todo_list, rind)
-            shape = [inputs.shape[0],inputs.shape[1], inputs.shape[2], inputs.shape[3]]
-            start = [0,0,0,0]
-            count = [inputs.shape[0],inputs.shape[1], inputs.shape[2], inputs.shape[3]]
+            shape = [inputs.shape[0], inputs.shape[1], inputs.shape[2], inputs.shape[3]]
+            start = [0, 0, 0, 0]
+            count = [inputs.shape[0], inputs.shape[1], inputs.shape[2], inputs.shape[3]]
             fh.write("inputs", inputs, shape, start, count)
             shape = [inds.shape[0]]
             start = [0]
@@ -111,6 +100,8 @@ def main():
             start = [0, 0]
             count = [coor.shape[0], coor.shape[1]]
             fh.write("coor", coor, shape, start, count, end_step=True)
+    #TODODG codes for diagnostics
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
