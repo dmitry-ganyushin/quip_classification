@@ -15,7 +15,7 @@ NODES=$(cat ${LSB_DJOB_HOSTFILE} | sort | uniq | grep -v login | grep -v batch |
 
 cd ./u24_lymphocyte/scripts/
 
-NPROC=6
+NPROC=1
 
 for n in $(seq 0 $((NPROC-1))); do
    jsrun -n1 -a1 -c7 -g1  --bind=proportional-packed:7 --launch_distribution=packed bash  ./prediction.sh $n $NPROC &  
